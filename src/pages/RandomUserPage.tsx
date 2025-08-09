@@ -1,11 +1,33 @@
 import { UserCard } from "../components/UserCard";
-import { cleanUser } from "../libs/CleanUser";
+import { cleanUser} from "../libs/CleanUser";
+import type { CardUserProps } from "../libs/CardUserType";
 import axios from "axios";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
 export default function RandomUserPage() {
-  const [users, setUsers] = useState("");
+  const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [genAmount, setGenAmount] = useState(1);
+
+useEffect(() => {
+  const storedGenAmount = localStorage.getItem("genAmount");
+  if (storedGenAmount == null){
+    return;
+  }
+  setGenAmount(Number(storedGenAmount));  
+  
+}, []);
+
+useEffect(() => {
+  if (isFirstLoad){
+    setIsFirstLoad(false);
+    return;
+  }
+  localStorage.setItem("genAmount", genAmount.toString());
+}, [genAmount]);
+
+
 
   const generateBtnOnClick = async () => {
     setIsLoading(true);
@@ -15,6 +37,8 @@ export default function RandomUserPage() {
     setIsLoading(false);
     const users = resp.data.results;
     //Your code here
+    setUsers(users.map((user: any) => cleanUser(user)));
+    setIsLoading(false);
     //Process result from api response with map function. Tips use function from /src/libs/CleanUser
     //Then update state with function : setUsers(...)
   };
@@ -28,6 +52,7 @@ export default function RandomUserPage() {
           className="form-control text-center"
           style={{ maxWidth: "100px" }}
           type="number"
+          //min={1}
           onChange={(event: any) => setGenAmount(event.target.value)}
           value={genAmount}
         />
@@ -38,7 +63,15 @@ export default function RandomUserPage() {
       {isLoading && (
         <p className="display-6 text-center fst-italic my-4">Loading ...</p>
       )}
-      {users && !isLoading && users.map(/*code map rendering UserCard here */)}
+      {users && !isLoading && users.map((user:CardUserProps) => (
+        <UserCard
+            key={user.email}
+            name={user.name}
+            email={user.email}
+            imgUrl={user.imgUrl}
+            address={user.address}
+          />
+      ))}
     </div>
   );
 }
